@@ -134,6 +134,23 @@ nav button.on{color:var(--pri);background:var(--pri2)}
 .stat .v.sm{font-size:19px}
 .share{height:7px;background:var(--pri2);border-radius:9px;margin-top:7px;overflow:hidden}
 .share i{display:block;height:100%;background:var(--pri);border-radius:9px;transform-origin:left}
+.prod.confoto{padding-top:10px}
+.pfwrap{position:relative;display:block}
+.pfoto{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:14px;margin-bottom:6px;background:var(--bg);display:block}
+.pzoom{position:absolute;right:6px;bottom:12px;width:30px;height:30px;border-radius:50%;background:rgba(43,33,24,.65);color:#fff;display:flex;align-items:center;justify-content:center}
+.thumb{width:44px;height:44px;border-radius:12px;background:var(--bg);color:var(--mut);display:flex;align-items:center;justify-content:center;flex:none;overflow:hidden}.thumb img{width:100%;height:100%;object-fit:cover}
+.row .thumb+.l{flex:1}
+.pkimg{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;margin-bottom:4px}
+.vfoto{display:block;position:relative;width:100%;border:0;padding:0;background:none;margin:2px 0 12px;border-radius:18px;overflow:hidden}
+.vfoto img{display:block;width:100%;height:170px;object-fit:cover}
+.vfoto span{position:absolute;right:10px;bottom:10px;background:rgba(43,33,24,.72);color:#fff;font-weight:800;font-size:13px;padding:6px 10px;border-radius:999px;display:flex;align-items:center;gap:5px}
+.lightbox{position:fixed;inset:0;background:rgba(20,14,10,.97);z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px}
+.lightbox img{width:min(92vw,440px);aspect-ratio:1;object-fit:cover;border-radius:22px}
+.lb-cap{color:#fff;text-align:center}.lb-cap b{display:block;font-size:20px}.lb-cap span{opacity:.8;font-weight:700}
+.lb-x{color:rgba(255,255,255,.6);font-size:13px;font-weight:700}
+.fotobox{display:flex;gap:14px;align-items:center;margin-top:12px}
+.fprev{width:84px;height:84px;border-radius:18px;background:var(--bg);border:1.5px dashed var(--line);color:var(--mut);display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none}.fprev img{width:100%;height:100%;object-fit:cover}
+.fbtns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.pill-btn.quitar{background:var(--warnbg);color:var(--warn)}
 </style>
 </head>
 <body>
@@ -159,6 +176,7 @@ nav button.on{color:var(--pri);background:var(--pri2)}
 <div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast"></div>
 <input type="file" id="bkFile" accept=".json,application/json" style="display:none">
+<input type="file" id="fotoIn" accept="image/*" style="display:none">
 
 <script src="anime.umd.min.js"></script>
 <script>
@@ -353,7 +371,7 @@ function renderLista(anim){
     if(!arr.length) L.innerHTML = '<div class="empty anim2"><b>No encontré "'+esc(filtro)+'"</b>Prueba con otro nombre.</div>';
     else L.innerHTML = '<div class="grid">' + arr.map(p=>{
       const ag = !(p.stock>0), low = esBajo(p);
-      return '<button class="prod anim2'+(ag?' agotado':'')+'" data-a="vender" data-id="'+esc(p.id)+'"><div class="n">'+esc(p.nombre)+'</div><div class="p">'+S(p.precio)+'</div><div class="s'+(ag||low?' low':'')+'">'+(ag?'Agotado':'Quedan '+p.stock)+'</div></button>';
+      return '<button class="prod anim2'+(ag?' agotado':'')+(p.foto?' confoto':'')+'" data-a="vender" data-id="'+esc(p.id)+'">'+(p.foto?'<span class="pfwrap"><img class="pfoto" src="'+esc(p.foto)+'" alt=""><span class="pzoom" data-a="verFoto" data-id="'+esc(p.id)+'" aria-label="Ver foto">'+IC.search.replace('width="20" height="20"','width="16" height="16"')+'</span></span>':'')+'<div class="n">'+esc(p.nombre)+'</div><div class="p">'+S(p.precio)+'</div><div class="s'+(ag||low?' low':'')+'">'+(ag?'Agotado':'Quedan '+p.stock)+'</div></button>';
     }).join('') + '</div>';
   }
   if(anim && AN) A(L.querySelectorAll('.anim2'),{opacity:[0,1],scale:[.85,1],delay:AN.stagger(40,{start:120}),duration:500,ease:'outBack(1.4)'});
@@ -451,19 +469,28 @@ function renderStock(){
   const orden = productos.slice().sort((a,b)=>{ const r=x=>!(x.stock>0)?0:esBajo(x)?1:2; return r(a)-r(b) || String(a.nombre).localeCompare(String(b.nombre)); });
   h += '<div class="card anim">' + orden.map(p=>{
     const ag=!(p.stock>0), low=esBajo(p);
-    return '<div class="row"><div class="l"><div class="nm">'+esc(p.nombre)+'</div><div class="dt">'+S(p.precio)+' · <span class="badge'+(ag||low?' low':'')+'">'+(ag?'Agotado':p.stock+' unid.')+'</span></div></div><div class="acts"><button class="pill-btn" data-a="reponer" data-id="'+esc(p.id)+'">+ Reponer</button><button class="icon-btn" data-a="editar" data-id="'+esc(p.id)+'" aria-label="Editar">'+IC.edit+'</button></div></div>';
+    return '<div class="row">'+thumb(p)+'<div class="l"><div class="nm">'+esc(p.nombre)+'</div><div class="dt">'+S(p.precio)+' · <span class="badge'+(ag||low?' low':'')+'">'+(ag?'Agotado':p.stock+' unid.')+'</span></div></div><div class="acts"><button class="pill-btn" data-a="reponer" data-id="'+esc(p.id)+'">+ Reponer</button><button class="icon-btn" data-a="editar" data-id="'+esc(p.id)+'" aria-label="Editar">'+IC.edit+'</button></div></div>';
   }).join('') + '</div>';
   h += '<button class="btn anim" data-a="nuevo">+ Agregar producto</button>';
   return h;
 }
 
 /* ---------- Sheets de acciones ---------- */
+function thumb(p){ return '<div class="thumb">'+(p.foto?'<img src="'+esc(p.foto)+'" alt="">':IC.box.replace('width="30" height="30"','width="20" height="20"'))+'</div>'; }
+function fotoVenta(p){ return p.foto ? '<button class="vfoto" data-a="verFoto" data-id="'+esc(p.id)+'" aria-label="Ver foto"><img src="'+esc(p.foto)+'" alt=""><span>'+IC.search.replace('width="20" height="20"','width="16" height="16"')+' Ver foto</span></button>' : ''; }
+function verFoto(p){
+  if(!p||!p.foto) return;
+  const o=document.createElement('div'); o.className='lightbox'; o.setAttribute('data-a','cerrarFoto');
+  o.innerHTML='<img src="'+esc(p.foto)+'" alt="'+esc(p.nombre)+'"><div class="lb-cap"><b>'+esc(p.nombre)+'</b><span>'+S(p.precio)+' · quedan '+(p.stock>0?p.stock:0)+'</span></div><div class="lb-x">Toca para cerrar</div>';
+  document.body.appendChild(o);
+  A(o,{opacity:[0,1],duration:220,ease:'linear'}); A(o.querySelector('img'),{scale:[.7,1],duration:450,ease:'outBack(1.4)'});
+}
 function sheetVender(p){
   if(!(p.stock>0)){
-    openSheet('<h3>'+esc(p.nombre)+'</h3><p class="mut">Este producto está agotado.</p><button class="btn" data-a="reponer" data-id="'+esc(p.id)+'">Reponer stock</button><button class="btn ghost" data-a="cerrar">Cerrar</button>');
+    openSheet(fotoVenta(p)+'<h3>'+esc(p.nombre)+'</h3><p class="mut">Este producto está agotado.</p><button class="btn" data-a="reponer" data-id="'+esc(p.id)+'">Reponer stock</button><button class="btn ghost" data-a="cerrar">Cerrar</button>');
     return;
   }
-  openSheet('<h3>'+esc(p.nombre)+'</h3><p class="mut">Quedan '+p.stock+' unidades</p>'+
+  openSheet(fotoVenta(p)+'<h3>'+esc(p.nombre)+'</h3><p class="mut">Quedan '+p.stock+' unidades</p>'+
     '<div class="qty"><button data-a="qmenos" aria-label="Menos">−</button><div class="v" id="qv">1</div><button data-a="qmas" aria-label="Más">+</button></div>'+
     '<label for="precio">Precio por unidad (S/)</label><input id="precio" type="number" inputmode="decimal" step="0.1" min="0" value="'+esc(p.precio)+'">'+
     '<div class="err"></div><button class="btn ok" data-a="registrar" id="regBtn"></button><button class="btn ghost" data-a="cerrar">Cancelar</button>',
@@ -485,6 +512,7 @@ function sheetLibre(){
 function sheetProducto(p){
   const nuevo = !p;
   openSheet('<h3>'+(nuevo?'Nuevo producto':'Editar producto')+'</h3>'+
+    '<div class="fotobox"><div class="fprev" id="fPrev">'+(p&&p.foto?'<img src="'+esc(p.foto)+'" alt="">':IC.box)+'</div><div class="fbtns"><button class="pill-btn" data-a="fotoElegir">'+(p&&p.foto?'Cambiar foto':'Agregar foto')+'</button><button class="pill-btn quitar" data-a="fotoQuitar" style="'+(p&&p.foto?'':'display:none')+'">Quitar</button><span class="mut" style="font-size:12px">Opcional · cámara o galería</span></div></div>'+
     '<label for="pNom">Nombre</label><input id="pNom" maxlength="60" placeholder="Ej. Pan francés" value="'+esc(p?p.nombre:'')+'">'+
     '<div class="two"><div><label for="pPre">Precio (S/)</label><input id="pPre" type="number" inputmode="decimal" step="0.1" min="0" placeholder="0.00" value="'+(p?esc(p.precio):'')+'"></div>'+
     '<div><label for="pSto">Cantidad en stock</label><input id="pSto" type="number" inputmode="numeric" step="1" min="0" placeholder="0" value="'+(p?esc(p.stock):'')+'"></div></div>'+
@@ -492,7 +520,7 @@ function sheetProducto(p){
     '<div class="err"></div><button class="btn" data-a="guardarProd">'+(nuevo?'Agregar producto':'Guardar cambios')+'</button>'+
     (nuevo?'':'<button class="btn danger" data-a="borrarProd">Eliminar producto</button>')+
     '<button class="btn ghost" data-a="cerrar">Cancelar</button>',
-    {tipo:'prod', pid:p?p.id:null}, nuevo?'#pNom':null);
+    {tipo:'prod', pid:p?p.id:null, foto:p&&p.foto?p.foto:''}, nuevo?'#pNom':null);
 }
 function sheetReponer(p){
   openSheet('<h3>Reponer '+esc(p.nombre)+'</h3><p class="mut">Ahora tienes '+(p.stock>0?p.stock:0)+' unidades. ¿Cuántas llegaron?</p>'+
@@ -698,7 +726,7 @@ function renderPick(anim){
   const arr=productos.filter(p=>!f || String(p.nombre).toLowerCase().includes(f));
   G.innerHTML = !productos.length ? '<p class="mut" style="grid-column:1/-1;padding:10px 0">Aún no tienes productos en stock. Usa "Otro producto".</p>'
     : !arr.length ? '<p class="mut" style="grid-column:1/-1;padding:10px 0">No encontré ese producto.</p>'
-    : arr.map(p=>{ const ag=!(p.stock>0); return '<button class="pick'+(ag?' agotado':'')+'" data-a="fPick" data-id="'+esc(p.id)+'"><b>'+esc(p.nombre)+'</b><span>'+S(p.precio)+' · '+(ag?'Agotado':'Quedan '+p.stock)+'</span></button>'; }).join('');
+    : arr.map(p=>{ const ag=!(p.stock>0); return '<button class="pick'+(ag?' agotado':'')+'" data-a="fPick" data-id="'+esc(p.id)+'">'+(p.foto?'<img class="pkimg" src="'+esc(p.foto)+'" alt="">':'')+'<b>'+esc(p.nombre)+'</b><span>'+S(p.precio)+' · '+(ag?'Agotado':'Quedan '+p.stock)+'</span></button>'; }).join('');
   if(anim && AN) A(G.querySelectorAll('.pick'),{opacity:[0,1],scale:[.9,1],delay:AN.stagger(30,{start:200}),duration:400,ease:'outBack(1.4)'});
 }
 function sheetFiarQty(p){
@@ -844,6 +872,20 @@ document.addEventListener('input', e=>{
   else if(e.target.id==='fPrecio'){ actFBtn(); }
 });
 
+/* ---------- Fotos ---------- */
+function achicarFoto(file){
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(file), img=new Image();
+    img.onload=()=>{ try{ const S2=400, c=document.createElement('canvas'); c.width=S2; c.height=S2; const x=c.getContext('2d'); const m=Math.min(img.naturalWidth,img.naturalHeight); x.drawImage(img,(img.naturalWidth-m)/2,(img.naturalHeight-m)/2,m,m,0,0,S2,S2); URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg',0.7)); }catch(e){ rej(e); } };
+    img.onerror=()=>{ URL.revokeObjectURL(url); rej(new Error('img')); };
+    img.src=url;
+  });
+}
+document.getElementById('fotoIn').addEventListener('change', async e=>{
+  const f=e.target.files&&e.target.files[0]; e.target.value=''; if(!f||!SH||SH.tipo!=='prod') return;
+  try{ const d=await achicarFoto(f); SH.foto=d; $('#fPrev').innerHTML='<img src="'+d+'" alt="">'; A('#fPrev img',{scale:[.6,1],opacity:[0,1],duration:450,ease:'outBack(1.6)'}); const q=document.querySelector('[data-a=fotoQuitar]'); if(q) q.style.display=''; const e2=document.querySelector('[data-a=fotoElegir]'); if(e2) e2.textContent='Cambiar foto'; }
+  catch(err){ toast('No se pudo usar esa foto','err'); }
+});
 /* ---------- Acciones ---------- */
 async function registrarVenta(nombre, pid, cantidad, precio){
   const f = hoy;
@@ -870,6 +912,10 @@ async function onClick(e){
     window.scrollTo(0,0); renderTab(true); return;
   }
   if(a==='cerrar'){ closeSheet(); return; }
+  if(a==='verFoto'){ verFoto(prodPor(id)); return; }
+  if(a==='cerrarFoto'){ const o=b; A(o,{opacity:0,duration:200,ease:'linear',onComplete:()=>o.remove()}); if(!AN) o.remove(); return; }
+  if(a==='fotoElegir'){ document.getElementById('fotoIn').click(); return; }
+  if(a==='fotoQuitar'){ if(!SH) return; SH.foto=''; $('#fPrev').innerHTML=IC.box; b.style.display='none'; const e2=document.querySelector('[data-a=fotoElegir]'); if(e2) e2.textContent='Agregar foto'; return; }
   if(a==='respaldo'){ sheetRespaldo(); return; }
   if(a==='bkDescargar'){
     const {blob,nombre}=archivoRespaldo();
@@ -935,6 +981,7 @@ async function onClick(e){
     if(isNaN(st)||st<0) return setErr('La cantidad en stock no puede ser negativa');
     if(productos.some(x=>x.id!==SH.pid && String(x.nombre).toLowerCase()===nm.toLowerCase())) return setErr('Ya tienes un producto con ese nombre');
     const p = {id:SH.pid||uid(), nombre:nm, precio:Math.round(pr*100)/100, stock:st, minimo:isNaN(mn)||mn<0?5:mn};
+    if(SH.foto) p.foto=SH.foto;
     const nuevo=!SH.pid; closeSheet();
     const ok = await guardar(ST.saveProduct(p));
     if(ok) toast(nuevo?'Producto agregado':'Cambios guardados');
